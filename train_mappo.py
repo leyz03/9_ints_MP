@@ -220,8 +220,8 @@ def train(exp_config_path:str):  # noqa: F821
         # 保存模型
         # 每5个迭代保存一次策略网络（actor）和价值网络（critic）的模型。
         if i % 5 == 0:
-            policy_gen.save_model(os.path.join(model_path,f'{i}_actor.pkl'))
-            value_gen.save_model(os.path.join(model_path,f'{i}_critic.pkl'))
+            policy_gen.save_model(os.path.join(model_path,f'actor.pkl'))
+            value_gen.save_model(os.path.join(model_path,f'critic.pkl'))
 
         sampling_start = time.time() # 重置采样时间的开始时间。
 
