@@ -1,0 +1,5 @@
+{
+    "experiment_name": "Exp1-demo",
+    "environment_name": "demo.json",
+    "model_name": "local_occ_mlp"
+}

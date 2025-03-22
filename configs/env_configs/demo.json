@@ -1,0 +1,17 @@
+{
+  "sumocfg": "./sumo_nets/demo/env/demo.sumocfg",
+  "sumonet": "./sumo_nets/demo/env/demo.net.xml",
+  "simulation_time": 1500,
+  "simulation_steps": 200,
+  "agent_ids": ["E"],
+  "non_agent_ids": ["B", "D", "F", "H"],
+  "action_space": {
+    "E": 4,
+    "B": 1,
+    "D": 1,
+    "F": 1,
+    "H": 1
+  },
+  "road_ids": []
+}
+  

@@ -1,0 +1,22 @@
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <timedEvent type="SaveTLSStates" source="F" dest="SaveTLSStates_F.out.xml"/>
+    <timedEvent type="SaveTLSStates" source="E" dest="SaveTLSStates_E.out.xml"/>
+    <timedEvent type="SaveTLSStates" source="B" dest="SaveTLSStates_B.out.xml"/>
+    <timedEvent type="SaveTLSStates" source="H" dest="SaveTLSStates_H.out.xml"/>
+    <timedEvent type="SaveTLSStates" source="D" dest="SaveTLSStates_D.out.xml"/>
+    <timedEvent type="SaveTLSProgram" source="F" dest="SaveTLSProgram_F.out.xml"/>
+    <timedEvent type="SaveTLSProgram" source="E" dest="SaveTLSProgram_E.out.xml"/>
+    <timedEvent type="SaveTLSProgram" source="B" dest="SaveTLSProgram_B.out.xml"/>
+    <timedEvent type="SaveTLSProgram" source="H" dest="SaveTLSProgram_H.out.xml"/>
+    <timedEvent type="SaveTLSProgram" source="D" dest="SaveTLSProgram_D.out.xml"/>
+    <timedEvent type="SaveTLSSwitchStates" source="F" dest="SaveTLSSwitchStates_F.out.xml"/>
+    <timedEvent type="SaveTLSSwitchStates" source="E" dest="SaveTLSSwitchStates_E.out.xml"/>
+    <timedEvent type="SaveTLSSwitchStates" source="B" dest="SaveTLSSwitchStates_B.out.xml"/>
+    <timedEvent type="SaveTLSSwitchStates" source="H" dest="SaveTLSSwitchStates_H.out.xml"/>
+    <timedEvent type="SaveTLSSwitchStates" source="D" dest="SaveTLSSwitchStates_D.out.xml"/>
+    <timedEvent type="SaveTLSSwitchTimes" source="F" dest="SaveTLSSwitchTimes_F.out.xml"/>
+    <timedEvent type="SaveTLSSwitchTimes" source="E" dest="SaveTLSSwitchTimes_E.out.xml"/>
+    <timedEvent type="SaveTLSSwitchTimes" source="B" dest="SaveTLSSwitchTimes_B.out.xml"/>
+    <timedEvent type="SaveTLSSwitchTimes" source="H" dest="SaveTLSSwitchTimes_H.out.xml"/>
+    <timedEvent type="SaveTLSSwitchTimes" source="D" dest="SaveTLSSwitchTimes_D.out.xml"/>
+</additional>

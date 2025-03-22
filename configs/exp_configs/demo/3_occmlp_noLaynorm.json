@@ -1,0 +1,5 @@
+{
+    "experiment_name": "Exp3-demo",
+    "environment_name": "demo.json",
+    "model_name": "local_occ_mlp_noLaynorm"
+}
