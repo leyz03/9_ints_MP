@@ -46,8 +46,8 @@ def train(exp_config_path:str):  # noqa: F821
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     
     # 超参数设置
-    num_envs = 1 # 同时开启的环境个数
-    n_iters = 100 # 控制训练的时间长度
+    num_envs = 8 # 同时开启的环境个数
+    n_iters = 500 # 控制训练的时间长度
 
     exp_name = exp_config["experiment_name"]
     model_name = exp_config["model_name"]
