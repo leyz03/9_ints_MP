@@ -228,7 +228,7 @@ def train(exp_config_path:str):  # noqa: F821
 if __name__ == "__main__": # 主函数，通过不同的场景和模型名称来调用train函数进行训练。
     scenario_names = ["demo"] # 场景名称
     model_names = [
-        "1_occmlp"
+        "1_occmlp","2_allcnn"
     ] # 模型的名称
     for scenario_name in scenario_names:
         for model_name in model_names:
