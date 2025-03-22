@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+   <input>
+      <net-file value="demo.net.xml"/>
+      <route-files value="demo.rou.xml"/>
+      <additional-files value="../add/tls.add.xml, ../add/e2.add.xml"/>
+   </input>
+   <output>
+      <!-- <scale value="0.25"/> -->
+   </output>
+</configuration>
