@@ -59,7 +59,7 @@ if __name__ == '__main__':
         action_space=action_space,
         num_seconds=num_seconds,
         road_ids=road_ids,
-        use_gui=True,
+        use_gui=False,
         cell_length=100,
         log_file=log_path,
         device=device,
