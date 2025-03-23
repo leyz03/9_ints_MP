@@ -26,6 +26,8 @@ from rule_based_policy.traffic_rule_policy import TrafficPolicy
 class GlobalLocalInfoWrapper(gym.Wrapper):
     def __init__(self, env: gym.Env, filepath:str, road_ids:List[str], cell_length:float=20):
         super().__init__(env)
+        self.agent_tls_ids = self.env.unwrapped.agent_tls_ids # 记录 agent 的路口 id
+        self.non_agent_tls_ids = self.env.unwrapped.non_agent_tls_ids # 记录非 agent 的路口 id
         self.tls_ids = sorted(self.env.unwrapped.agent_tls_ids + self.env.unwrapped.non_agent_tls_ids) # 多路口的 ids
         self.cell_length = cell_length # 每个 cell 的长度 # 每个单元格的长度，默认为 20
         self.filepath = filepath # 日志文件路径
@@ -242,7 +244,7 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
         _recent_k_data_veh_padding = self.vehicle_masks_timeseries.get_recent_k_data(K)
         return merge_local_data(_recent_k_data_veh), merge_local_data(_recent_k_data_veh_padding) # 获取数据: 从车辆时间序列和车辆掩码时间序列获取最近K个数据，并合并后返回
 
-    def process_reward(self, vehicle_state):
+    def process_reward(self, tls_data, vehicle_state):
         """
         Calculate the average waiting time for vehicles at all intersections.
         这里是按整个路网计算一个统一的奖励, 而不是每一个路口计算名一个奖励
@@ -250,10 +252,12 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
         :param vehicle_state: The state of vehicles in the environment.
         :return: The negative average waiting time as the reward.
         """
+        pressure = np.array([tls_data[tls_id]['pressure'] for tls_id in self.tls_ids]) # 获取每个路口的压力信息
+        occupancy = np.array([tls_data[tls_id]['last_step_occupancy'] for tls_id in self.tls_ids]) # 获取每个路口的占用率信息
+        reward = pressure*occupancy
         waiting_times = [veh['waiting_time'] for veh in vehicle_state.values()]
         
-        return -np.mean(waiting_times) if waiting_times else 0
-
+        return reward.mean() if len(waiting_times) > 0 else 0.0 # 返回平均等待时间作为奖励，如果没有车辆则返回0.0
     # #############
     # reset & step
     # #############
@@ -371,7 +375,8 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
         processed_veh_obs, processed_veh_mask = self.process_veh_state()
         
         # 处理 reward
-        reward = self.process_reward(vehicle_data) # 计算路网的整体等待时间
+        #reward = self.process_reward(vehicle_data) # 计算路网的整体等待时间
+        reward = self.process_reward(tls_data, vehicle_data) 
         rewards = {_tls_id:reward for _tls_id in self.tls_ids}
 
         # 处理 dones & truncateds
