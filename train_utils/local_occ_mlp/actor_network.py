@@ -13,6 +13,7 @@ class ActorNetwork(nn.Module):
     def __init__(self, action_size):
         super(ActorNetwork, self).__init__()
         self.agent_embedding = nn.Embedding(5, 256) # 只考虑E的local observation
+        
         self.fc1 = nn.Linear(in_features=60, out_features=256)  # 5*12=60
         self.fc2 = nn.Linear(in_features=256, out_features=128)
         self.fc3 = nn.Linear(in_features=128, out_features=64)
