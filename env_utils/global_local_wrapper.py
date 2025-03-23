@@ -252,7 +252,7 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
         :param vehicle_state: The state of vehicles in the environment.
         :return: The negative average waiting time as the reward.
         """
-        pressure = np.array([tls_data[tls_id]['pressure'] for tls_id in self.tls_ids]) # 获取每个路口的压力信息
+        pressure = np.array([tls_data[tls_id]['pressure_per_lane'] for tls_id in self.tls_ids]) # 获取每个路口的压力信息
         occupancy = np.array([tls_data[tls_id]['last_step_occupancy'] for tls_id in self.tls_ids]) # 获取每个路口的占用率信息
         reward = pressure*occupancy
         waiting_times = [veh['waiting_time'] for veh in vehicle_state.values()]
