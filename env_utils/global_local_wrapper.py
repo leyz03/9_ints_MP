@@ -257,7 +257,7 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
         reward = pressure*occupancy
         waiting_times = [veh['waiting_time'] for veh in vehicle_state.values()]
         
-        return reward.mean() if len(waiting_times) > 0 else 0.0 # 返回平均等待时间作为奖励，如果没有车辆则返回0.0
+        return -reward.mean() if len(waiting_times) > 0 else 0.0 # 返回平均等待时间作为奖励，如果没有车辆则返回0.0
     # #############
     # reset & step
     # #############
