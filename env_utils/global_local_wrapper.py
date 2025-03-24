@@ -248,16 +248,46 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
         """
         Calculate the average waiting time for vehicles at all intersections.
         这里是按整个路网计算一个统一的奖励, 而不是每一个路口计算名一个奖励
-
-        :param vehicle_state: The state of vehicles in the environment.
-        :return: The negative average waiting time as the reward.
+        :param tls_data: 交叉口信号灯的状态信息
+        :param vehicle_state: 车辆的状态信息
+        :return: 负加权平均压力值作为奖励
         """
-        pressure = np.array([tls_data[tls_id]['pressure_per_lane'] for tls_id in self.tls_ids]) # 获取每个路口的压力信息
-        occupancy = np.array([tls_data[tls_id]['last_step_occupancy'] for tls_id in self.tls_ids]) # 获取每个路口的占用率信息
+        # 如果没有车辆，返回0
+        if not vehicle_state:
+            return 0.0
         
-        waiting_times = [veh['waiting_time'] for veh in vehicle_state.values()]
+        total_weighted_pressure = 0.0
+        total_weight = 0.0
         
-        return -occupancy.mean() * max(abs(pressure)) if len(waiting_times) and len(pressure) > 0 else 0.0 # 返回平均等待时间作为奖励，如果没有车辆则返回0.0
+        # 计算每个交叉口的加权压力
+        for tls_id in self.tls_ids:
+            # 获取该交叉口的压力值和平均速度
+            pressures = np.array(tls_data[tls_id]['pressure_per_lane'])
+            speeds = np.array(tls_data[tls_id]['last_step_mean_speed'])
+            
+            if pressures.size == 0:
+                continue
+            
+            # 计算该交叉口的平均绝对压力
+            avg_abs_pressure = np.mean(np.abs(pressures))
+            
+            # 使用交叉口的平均速度作为权重
+            weight = np.mean(speeds) if speeds.size > 0 else 0.1
+            # 确保权重为正值（至少为0.1，避免负权重或零权重）
+            weight = max(weight, 0.1)
+            
+            # 累加加权压力
+            total_weighted_pressure += avg_abs_pressure * weight
+            total_weight += weight
+        
+        # 避免除零错误
+        if total_weight <= 0:
+            return 0.0
+        
+        # 计算加权平均压力并返回负值
+        weighted_avg_pressure = total_weighted_pressure / total_weight
+        
+        return -weighted_avg_pressure
     # #############
     # reset & step
     # #############
