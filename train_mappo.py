@@ -47,7 +47,7 @@ def train(exp_config_path:str):  # noqa: F821
     
     # 超参数设置
     num_envs = 8 # 同时开启的环境个数
-    n_iters = 500 # 控制训练的时间长度
+    n_iters = 1000 # 控制训练的时间长度
 
     exp_name = exp_config["experiment_name"]
     model_name = exp_config["model_name"]
@@ -61,7 +61,7 @@ def train(exp_config_path:str):  # noqa: F821
     memory_size = frames_per_batch # 回放缓冲区的大小
     collector_total_frames = frames_per_batch*n_iters
     minibatch_size = num_envs*(env_config["simulation_steps"]//2) # multi-agent 这个参数稍微大一些, 至少包含一半的数据
-    num_epochs = 10 # optimization steps per batch of data collected, 10-15 即可
+    num_epochs = 15 # optimization steps per batch of data collected, 10-15 即可
 
     # Create Env
     sumo_cfg = path_convert(env_config["sumocfg"])
