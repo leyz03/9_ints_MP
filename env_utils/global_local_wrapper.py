@@ -254,10 +254,10 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
         """
         pressure = np.array([tls_data[tls_id]['pressure_per_lane'] for tls_id in self.tls_ids]) # 获取每个路口的压力信息
         occupancy = np.array([tls_data[tls_id]['last_step_occupancy'] for tls_id in self.tls_ids]) # 获取每个路口的占用率信息
-        reward = pressure*occupancy
+        
         waiting_times = [veh['waiting_time'] for veh in vehicle_state.values()]
         
-        return -reward.mean() if len(waiting_times) > 0 else 0.0 # 返回平均等待时间作为奖励，如果没有车辆则返回0.0
+        return -occupancy.mean() * max(abs(pressure)) if len(waiting_times) > 0 else 0.0 # 返回平均等待时间作为奖励，如果没有车辆则返回0.0
     # #############
     # reset & step
     # #############
