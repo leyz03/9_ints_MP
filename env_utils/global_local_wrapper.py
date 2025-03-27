@@ -66,6 +66,42 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
             )
             self.rewards_writer = list()
 
+        # 注意力机制相关的变量
+        self.history_length = 5  # 历史数据长度
+        self.attention_temperature = 2.0  # softmax温度参数
+        self.movement_history = {
+            tls_id: {
+                'occupancy': [],  # 占有率历史
+                'speed': [],      # 平均速度历史
+                'pressure': []    # 压力历史
+            } for tls_id in self.agent_tls_ids + self.non_agent_tls_ids
+        }
+
+        # 注意力机制配置
+        self.history_length = 5
+        self.attention_key_dim = 16  # 注意力机制的键维度
+        self.attention_temperature = 1.0  # 温度参数
+        
+        # 存储原始历史数据
+        self.movement_history = {
+            tls_id: {
+                'occupancy': [],  # 占有率历史
+                'speed': [],      # 平均速度历史
+                'pressure': []    # 压力历史
+            } for tls_id in self.tls_ids
+        }
+        
+        # 标准化参数
+        self.occupancy_scale = 1.0  # 占有率已经是0-1
+        self.speed_max = 15.0  # 最大速度参考值 (m/s)
+        self.pressure_scale_factor = 0.1  # 压力缩放因子
+        
+        # 权重转换矩阵 - 将交叉口特征转为Query/Key/Value
+        self.feature_dim = 3  # occupancy, speed, pressure
+        self.W_query = np.random.randn(self.feature_dim, self.attention_key_dim) * 0.1
+        self.W_key = np.random.randn(self.feature_dim, self.attention_key_dim) * 0.1
+        self.W_value = np.random.randn(self.feature_dim, 1) * 0.1
+
     def __initialize_edge_cells(self):
         """根据道路信息初始化 edge cell 的信息, 这里每个时刻都需要进行初始化
         """
@@ -246,39 +282,97 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
 
     def process_reward(self, tls_data, vehicle_state):
         """
-        计算所有交叉口的加权压力作为奖励。
+        使用真正的注意力机制对各交叉口的压力奖励进行加权
         
         :param tls_data: 交叉口信号灯的状态信息
-        :param vehicle_state: 车辆的状态信息，格式为 {vehicle_id: vehicle_info}
-        :return: 负加权压力值作为奖励
+        :param vehicle_state: 车辆的状态信息
+        :return: 基于注意力权重的压力奖励
         """
-        # 如果没有车辆，返回0
-        if not vehicle_state:
-            return 0.0
+        # 1. 提取并标准化每个交叉口的特征
+        intersection_features = {}
+        raw_pressures = {}
         
-        # 计算所有车辆的平均等待时间
-        waiting_times = np.array([veh_info['waiting_time'] for veh_id, veh_info in vehicle_state.items()])
-        mean_waiting_time = np.mean(waiting_times) if waiting_times.size > 0 else 0.0
-        
-        total_weighted_pressure = 0.0
-        
-        # 计算每个交叉口的加权压力
         for tls_id in self.tls_ids:
+            # 获取当前交叉口的数据
+            occupancy_data = np.array(tls_data[tls_id]['last_step_occupancy']) / 100.0  # 已归一化
+            speed_data = np.array(tls_data[tls_id]['last_step_mean_speed']) / self.speed_max  # 归一化速度
+            pressure_data = np.array(tls_data[tls_id]['pressure_per_lane']) * self.pressure_scale_factor  # 缩放压力
+            
+            # 更新历史数据
+            if len(self.movement_history[tls_id]['occupancy']) >= self.history_length:
+                self.movement_history[tls_id]['occupancy'].pop(0)
+                self.movement_history[tls_id]['speed'].pop(0)
+                self.movement_history[tls_id]['pressure'].pop(0)
+                
+            self.movement_history[tls_id]['occupancy'].append(occupancy_data)
+            self.movement_history[tls_id]['speed'].append(speed_data)
+            self.movement_history[tls_id]['pressure'].append(pressure_data)
+            
+            # 计算历史平均值
+            avg_occupancy = np.mean(self.movement_history[tls_id]['occupancy'], axis=0)
+            avg_speed = np.mean(self.movement_history[tls_id]['speed'], axis=0)
+            avg_pressure = np.mean(np.abs(self.movement_history[tls_id]['pressure']), axis=0)
+            
+            # 反转速度（低速→高值, 高速→低值）
+            norm_speed = 1.0 - avg_speed
+            
+            # 计算交叉口特征向量 (平均值)
+            if len(avg_occupancy) > 0:
+                features = np.array([
+                    np.mean(avg_occupancy),
+                    np.mean(norm_speed),
+                    np.mean(avg_pressure)
+                ])
+                intersection_features[tls_id] = features
+                
+                # 记录原始压力值（用于最终奖励计算）
+                raw_pressures[tls_id] = np.sum(np.abs(tls_data[tls_id]['pressure_per_lane']))
+            else:
+                intersection_features[tls_id] = np.zeros(3)
+                raw_pressures[tls_id] = 0
+        
+        # 2. 转换为注意力机制的Q、K、V
+        queries = {}
+        keys = {}
+        values = {}
+        
+        for tls_id, features in intersection_features.items():
+            # 将特征转换为查询、键和值
+            queries[tls_id] = np.dot(features, self.W_query)
+            keys[tls_id] = np.dot(features, self.W_key)
+            values[tls_id] = np.dot(features, self.W_value)[0]  # 值是标量
+        
+        # 3. 计算注意力分数
+        attention_weights = {}
+        for q_id in self.tls_ids:
+            scores = []
+            for k_id in self.tls_ids:
+                # 计算查询与键的点积相似度
+                score = np.dot(queries[q_id], keys[k_id].T) / np.sqrt(self.attention_key_dim)
+                scores.append(score)
+            
+            # 应用温度参数并进行softmax
+            scores = np.array(scores) / self.attention_temperature
+            exp_scores = np.exp(scores - np.max(scores))  # 减去最大值防止溢出
+            attention_weights[q_id] = exp_scores / np.sum(exp_scores)
+        
+        # 4. 计算最终奖励
+        weighted_rewards = {}
+        for i, tls_id in enumerate(self.tls_ids):
+            # 基本奖励是负压力
+            base_reward = -raw_pressures[tls_id]
+            
+            # 应用注意力权重
+            weighted_sum = 0
+            for j, other_tls_id in enumerate(self.tls_ids):
+                weighted_sum += attention_weights[tls_id][j] * values[other_tls_id]
+            
+            # 奖励 = 负压力 * 注意力加权值
+            weighted_rewards[tls_id] = base_reward * (1.0 + weighted_sum)
+        
+        # 返回所有交叉口的加权奖励之和
+        return np.sum(list(weighted_rewards.values()))
 
-            max_abs_pressure = 0
-            # 获取该交叉口的压力值
-            pressures = np.array(tls_data[tls_id]['pressure_per_lane'])
-            
-            if pressures.size == 0:
-                continue
-            
-            # 计算该交叉口的最大绝对压力
-            max_abs_pressure_per_light = np.max(np.abs(pressures))  
-            if max_abs_pressure_per_light > max_abs_pressure:
-                max_abs_pressure = max_abs_pressure_per_light   
-            # 累加加权压力
-        total_weighted_pressure = -max_abs_pressure * mean_waiting_time
-        return total_weighted_pressure # 返回负加权压力作为奖励
     # #############
     # reset & step
     # #############
@@ -426,4 +520,4 @@ class GlobalLocalInfoWrapper(gym.Wrapper):
                 self.rewards_writer = list()
             
         return (processed_local_obs, processed_global_obs, np.array(self.edge_cell_mask), processed_veh_obs, processed_veh_mask), rewards, truncateds, dones, infos
-    
+
